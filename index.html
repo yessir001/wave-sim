@@ -1,12 +1,795 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
-    <script src="sketch.js"></script>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Standing Wave Simulation</title>
     <style>
-      body { margin: 0; overflow: hidden; }
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #00d4ff, #0099ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        canvas {
+            border: 2px solid #333;
+            border-radius: 8px;
+            width: 100%;
+            background: linear-gradient(to bottom, #0a0a0a, #151515);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        label {
+            font-weight: 500;
+            min-width: 120px;
+            color: #a0a0a0;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            background: #333;
+            outline: none;
+            border-radius: 3px;
+            -webkit-appearance: none;
+            min-width: 200px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #0099ff;
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0, 153, 255, 0.4);
+            transition: all 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #00d4ff;
+            box-shadow: 0 2px 15px rgba(0, 212, 255, 0.6);
+            transform: scale(1.1);
+        }
+
+        .value-display {
+            min-width: 50px;
+            text-align: center;
+            font-weight: bold;
+            color: #0099ff;
+            font-size: 1.1em;
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .mode-btn {
+            padding: 10px 20px;
+            background: #222;
+            border: 2px solid #444;
+            color: #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            font-size: 1em;
+        }
+
+        .mode-btn:hover {
+            background: #333;
+            border-color: #0099ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 153, 255, 0.3);
+        }
+
+        .mode-btn.active {
+            background: #0099ff;
+            border-color: #0099ff;
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(0, 153, 255, 0.5);
+        }
+
+        .info {
+            margin-top: 20px;
+            padding: 20px;
+            background: #252525;
+            border-radius: 8px;
+            border-left: 4px solid #0099ff;
+        }
+
+        .info h3 {
+            margin-top: 0;
+            color: #0099ff;
+        }
+
+        .formula {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            color: #00d4ff;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #0099ff, #00d4ff);
+            border: none;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1em;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 153, 255, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 153, 255, 0.5);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .audio-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #44ff44;
+            border-radius: 50%;
+            margin-left: 10px;
+            box-shadow: 0 0 10px rgba(68, 255, 68, 0.5);
+            animation: pulse 1s infinite;
+        }
+
+        .audio-indicator.off {
+            background: #ff4444;
+            animation: none;
+            box-shadow: 0 0 10px rgba(255, 68, 68, 0.3);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .quiz-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #252525;
+            border-radius: 8px;
+            border: 2px solid #333;
+        }
+
+        .quiz-section h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+        }
+
+        .quiz-question {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 6px;
+        }
+
+        .quiz-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .quiz-option {
+            padding: 8px 16px;
+            background: #333;
+            border: 2px solid #555;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quiz-option:hover {
+            background: #444;
+            border-color: #0099ff;
+        }
+
+        .quiz-option.correct {
+            background: #00ff44;
+            color: #000;
+            border-color: #00ff44;
+        }
+
+        .quiz-option.incorrect {
+            background: #ff4444;
+            color: #fff;
+            border-color: #ff4444;
+        }
+
+        .quiz-feedback {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
+        .quiz-feedback.correct {
+            background: rgba(0, 255, 68, 0.2);
+            color: #00ff44;
+        }
+
+        .quiz-feedback.incorrect {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+        }
+
+        .frequency-display {
+            background: #1a1a1a;
+            padding: 10px 15px;
+            border-radius: 6px;
+            display: inline-block;
+            margin-left: 10px;
+            font-family: 'Courier New', monospace;
+            color: #00d4ff;
+            border: 1px solid #333;
+        }
     </style>
-  </head>
-  <body></body>
+</head>
+<body>
+    <div class="container">
+        <h1>Standing Wave Simulation</h1>
+        <canvas id="waveCanvas" width="900" height="450"></canvas>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>Mode (n):</label>
+                <input type="range" id="modeSlider" min="1" max="10" value="1" step="1">
+                <span class="value-display" id="modeValue">1</span>
+            </div>
+            
+            <div class="control-group">
+                <label>Amplitude:</label>
+                <input type="range" id="amplitudeSlider" min="10" max="80" value="50" step="5">
+                <span class="value-display" id="amplitudeValue">50</span>
+            </div>
+            
+            <div class="control-group">
+                <label>Rope Tension:</label>
+                <input type="range" id="tensionSlider" min="0.5" max="2" value="1" step="0.1">
+                <span class="value-display" id="tensionValue">1.0</span>
+                <span class="frequency-display">f = <span id="frequencyValue">110</span> Hz</span>
+            </div>
+            
+            <div class="control-group">
+                <label>Animation Speed:</label>
+                <input type="range" id="speedSlider" min="0" max="5" value="2" step="0.1">
+                <span class="value-display" id="speedValue">2.0</span>
+            </div>
+            
+            <div class="control-group">
+                <button id="pauseBtn">Pause</button>
+                <button id="resetBtn">Reset</button>
+                <button id="soundBtn">Sound: ON <span class="audio-indicator"></span></button>
+            </div>
+            
+            <div class="mode-buttons">
+                <span style="color: #a0a0a0; margin-right: 10px;">Quick select:</span>
+                <button class="mode-btn" data-mode="1">n=1</button>
+                <button class="mode-btn" data-mode="2">n=2</button>
+                <button class="mode-btn" data-mode="3">n=3</button>
+                <button class="mode-btn" data-mode="4">n=4</button>
+                <button class="mode-btn" data-mode="5">n=5</button>
+            </div>
+        </div>
+        
+        <div class="info">
+            <h3>Standing Wave Properties</h3>
+            <p>Current mode: <strong id="modeInfo">n = 1 (Fundamental)</strong></p>
+            <p>Wavelength: <strong id="wavelengthInfo">λ = 2L</strong></p>
+            <p>Number of nodes: <strong id="nodesInfo">2</strong></p>
+            <p>Number of antinodes: <strong id="antinodesInfo">1</strong></p>
+            <p>Wave speed: <strong id="waveSpeedInfo">v = 220 m/s</strong></p>
+            <div class="formula">
+                y(x,t) = A sin(nπx/L) cos(ωt)
+                <br>
+                v = √(T/μ) = λf
+            </div>
+            <p style="color: #888; font-size: 0.9em;">
+                Where: T = tension, μ = linear mass density, v = wave speed, f = frequency
+            </p>
+        </div>
+
+        <div class="quiz-section">
+            <h3>Test Your Understanding</h3>
+            <div id="quizContainer"></div>
+            <button id="newQuizBtn" style="margin-top: 15px;">New Question</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('waveCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let mode = 1;
+        let amplitude = 50;
+        let speed = 2;
+        let tension = 1;
+        let time = 0;
+        let isPlaying = true;
+        let soundEnabled = true;
+        
+        const ropeLength = canvas.width - 100;
+        const centerY = canvas.height / 2;
+        const startX = 50;
+        const endX = canvas.width - 50;
+        
+        // Audio context for sound synthesis
+        let audioContext;
+        let oscillator;
+        let gainNode;
+        
+        // Controls
+        const modeSlider = document.getElementById('modeSlider');
+        const amplitudeSlider = document.getElementById('amplitudeSlider');
+        const speedSlider = document.getElementById('speedSlider');
+        const tensionSlider = document.getElementById('tensionSlider');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const soundBtn = document.getElementById('soundBtn');
+        const newQuizBtn = document.getElementById('newQuizBtn');
+        
+        // Value displays
+        const modeValue = document.getElementById('modeValue');
+        const amplitudeValue = document.getElementById('amplitudeValue');
+        const speedValue = document.getElementById('speedValue');
+        const tensionValue = document.getElementById('tensionValue');
+        const frequencyValue = document.getElementById('frequencyValue');
+        
+        // Info displays
+        const modeInfo = document.getElementById('modeInfo');
+        const wavelengthInfo = document.getElementById('wavelengthInfo');
+        const nodesInfo = document.getElementById('nodesInfo');
+        const antinodesInfo = document.getElementById('antinodesInfo');
+        const waveSpeedInfo = document.getElementById('waveSpeedInfo');
+        
+        // Mode buttons
+        const modeButtons = document.querySelectorAll('.mode-btn');
+        
+        // Quiz container
+        const quizContainer = document.getElementById('quizContainer');
+        
+        // Initialize audio
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            if (oscillator) {
+                oscillator.stop();
+                oscillator.disconnect();
+            }
+            
+            oscillator = audioContext.createOscillator();
+            gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            gainNode.gain.value = soundEnabled ? 0.1 : 0;
+            
+            updateFrequency();
+            oscillator.start();
+        }
+        
+        function updateFrequency() {
+            const baseFrequency = 110; // A2 note
+            const frequency = baseFrequency * mode * Math.sqrt(tension);
+            
+            if (oscillator) {
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            }
+            
+            frequencyValue.textContent = Math.round(frequency);
+            
+            const waveSpeed = Math.round(220 * Math.sqrt(tension));
+            waveSpeedInfo.textContent = `v = ${waveSpeed} m/s`;
+        }
+        
+        function updateInfo() {
+            const modeNames = {
+                1: 'Fundamental',
+                2: 'Second harmonic',
+                3: 'Third harmonic',
+                4: 'Fourth harmonic',
+                5: 'Fifth harmonic'
+            };
+            
+            modeInfo.textContent = `n = ${mode} (${modeNames[mode] || mode + 'th harmonic'})`;
+            wavelengthInfo.textContent = `λ = ${(2/mode).toFixed(2)}L`;
+            nodesInfo.textContent = mode + 1;
+            antinodesInfo.textContent = mode;
+            
+            updateFrequency();
+            
+            // Update active mode button
+            modeButtons.forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.mode) === mode);
+            });
+        }
+        
+        // Wave trail storage
+        const waveTrail = [];
+        const maxTrailLength = 8;
+        
+        function draw3DRope(points) {
+            // Draw wave trail/ghost effect first
+            waveTrail.forEach((trail, index) => {
+                const age = index / maxTrailLength;
+                const opacity = 0.15 * (1 - age);
+                
+                ctx.strokeStyle = `rgba(0, 170, 255, ${opacity})`;
+                ctx.lineWidth = 4;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = `rgba(0, 153, 255, ${opacity * 0.5})`;
+                
+                ctx.beginPath();
+                trail.forEach((point, i) => {
+                    if (i === 0) {
+                        ctx.moveTo(point.x, point.y);
+                    } else {
+                        ctx.lineTo(point.x, point.y);
+                    }
+                });
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            });
+            
+            // Add current wave to trail
+            if (isPlaying && points.length > 0) {
+                waveTrail.push([...points]);
+                if (waveTrail.length > maxTrailLength) {
+                    waveTrail.shift();
+                }
+            }
+            
+            // Create gradient for 3D effect
+            const gradient = ctx.createLinearGradient(0, centerY - amplitude - 20, 0, centerY + amplitude + 20);
+            gradient.addColorStop(0, '#66ddff');
+            gradient.addColorStop(0.3, '#00aaff');
+            gradient.addColorStop(0.5, '#0077ff');
+            gradient.addColorStop(0.7, '#0055cc');
+            gradient.addColorStop(1, '#003388');
+            
+            // Draw multiple layers for 3D effect
+            for (let layer = 3; layer >= 0; layer--) {
+                const layerOffset = layer * 1.5;
+                const layerOpacity = 0.3 + (3 - layer) * 0.2;
+                
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 8 - layer * 1.5;
+                ctx.globalAlpha = layerOpacity;
+                
+                if (layer === 0) {
+                    // Main rope with shadow
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#0099ff';
+                    ctx.shadowOffsetY = 2;
+                }
+                
+                ctx.beginPath();
+                points.forEach((point, i) => {
+                    const x = point.x;
+                    const y = point.y + layerOffset;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                });
+                ctx.stroke();
+                
+                ctx.shadowBlur = 0;
+            }
+            
+            ctx.globalAlpha = 1;
+            
+            // Add highlight on top
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            points.forEach((point, i) => {
+                const x = point.x;
+                const y = point.y - 4;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else if (i % 3 === 0) {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+        }
+        
+        function drawWave() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw fixed ends with 3D effect
+            const endGradient = ctx.createLinearGradient(0, centerY - 70, 0, centerY + 70);
+            endGradient.addColorStop(0, '#888');
+            endGradient.addColorStop(0.5, '#666');
+            endGradient.addColorStop(1, '#444');
+            
+            ctx.fillStyle = endGradient;
+            ctx.fillRect(startX - 25, centerY - 65, 10, 130);
+            ctx.fillRect(endX + 15, centerY - 65, 10, 130);
+            
+            // Calculate wave points
+            const numPoints = 200;
+            const dx = ropeLength / numPoints;
+            const points = [];
+            
+            for (let i = 0; i <= numPoints; i++) {
+                const x = i * dx;
+                const normalizedX = x / ropeLength;
+                
+                // Standing wave equation with tension effect
+                const y = amplitude * Math.sin(mode * Math.PI * normalizedX) * 
+                         Math.cos(speed * Math.sqrt(tension) * time);
+                
+                points.push({
+                    x: startX + x,
+                    y: centerY - y
+                });
+            }
+            
+            // Draw 3D rope
+            draw3DRope(points);
+            
+            // Draw nodes with 3D effect
+            const nodeGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 6);
+            nodeGradient.addColorStop(0, '#ff6666');
+            nodeGradient.addColorStop(0.5, '#ff4444');
+            nodeGradient.addColorStop(1, '#cc2222');
+            
+            for (let i = 0; i <= mode; i++) {
+                const nodeX = startX + (i / mode) * ropeLength;
+                
+                ctx.save();
+                ctx.translate(nodeX, centerY);
+                ctx.fillStyle = nodeGradient;
+                ctx.beginPath();
+                ctx.arc(0, 0, 6, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Add highlight
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.beginPath();
+                ctx.arc(-2, -2, 2, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.restore();
+            }
+            
+            // Draw antinodes with 3D effect
+            const antinodeGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 5);
+            antinodeGradient.addColorStop(0, '#66ff66');
+            antinodeGradient.addColorStop(0.5, '#44ff44');
+            antinodeGradient.addColorStop(1, '#22cc22');
+            
+            ctx.globalAlpha = 0.7;
+            for (let i = 0; i < mode; i++) {
+                const antinodeX = startX + ((2 * i + 1) / (2 * mode)) * ropeLength;
+                
+                ctx.save();
+                ctx.translate(antinodeX, centerY);
+                ctx.fillStyle = antinodeGradient;
+                ctx.beginPath();
+                ctx.arc(0, 0, 5, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.restore();
+            }
+            ctx.globalAlpha = 1;
+        }
+        
+        // Quiz functionality
+        const quizQuestions = [
+            {
+                question: "How many nodes are present in the 3rd harmonic?",
+                options: ["2", "3", "4", "5"],
+                correct: 2,
+                explanation: "The 3rd harmonic (n=3) has n+1 = 4 nodes."
+            },
+            {
+                question: "What is the wavelength of the fundamental mode (n=1)?",
+                options: ["L/2", "L", "2L", "4L"],
+                correct: 2,
+                explanation: "For the fundamental mode, wavelength λ = 2L."
+            },
+            {
+                question: "How does doubling the tension affect the wave speed?",
+                options: ["No change", "Increases by √2", "Doubles", "Quadruples"],
+                correct: 1,
+                explanation: "Wave speed v = √(T/μ), so doubling tension increases speed by √2."
+            },
+            {
+                question: "How many antinodes are in the 5th harmonic?",
+                options: ["3", "4", "5", "6"],
+                correct: 2,
+                explanation: "The number of antinodes equals the mode number n. For n=5, there are 5 antinodes."
+            },
+            {
+                question: "What happens to frequency when you double the mode number?",
+                options: ["Halves", "No change", "Doubles", "Quadruples"],
+                correct: 2,
+                explanation: "Frequency is proportional to mode number: f = nf₁, so doubling n doubles the frequency."
+            }
+        ];
+        
+        function displayQuiz() {
+            const question = quizQuestions[Math.floor(Math.random() * quizQuestions.length)];
+            
+            quizContainer.innerHTML = `
+                <div class="quiz-question">
+                    <p><strong>${question.question}</strong></p>
+                    <div class="quiz-options">
+                        ${question.options.map((option, index) => 
+                            `<button class="quiz-option" data-index="${index}">${option}</button>`
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+            
+            const optionButtons = quizContainer.querySelectorAll('.quiz-option');
+            optionButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const selectedIndex = parseInt(this.dataset.index);
+                    
+                    optionButtons.forEach(b => b.style.pointerEvents = 'none');
+                    
+                    if (selectedIndex === question.correct) {
+                        this.classList.add('correct');
+                        quizContainer.innerHTML += `
+                            <div class="quiz-feedback correct">
+                                ✓ Correct! ${question.explanation}
+                            </div>
+                        `;
+                    } else {
+                        this.classList.add('incorrect');
+                        optionButtons[question.correct].classList.add('correct');
+                        quizContainer.innerHTML += `
+                            <div class="quiz-feedback incorrect">
+                                ✗ Incorrect. ${question.explanation}
+                            </div>
+                        `;
+                    }
+                });
+            });
+        }
+        
+        function animate() {
+            if (isPlaying) {
+                time += 0.05;
+                drawWave();
+            }
+            requestAnimationFrame(animate);
+        }
+        
+        // Event listeners
+        modeSlider.addEventListener('input', (e) => {
+            mode = parseInt(e.target.value);
+            modeValue.textContent = mode;
+            updateInfo();
+        });
+        
+        amplitudeSlider.addEventListener('input', (e) => {
+            amplitude = parseInt(e.target.value);
+            amplitudeValue.textContent = amplitude;
+        });
+        
+        speedSlider.addEventListener('input', (e) => {
+            speed = parseFloat(e.target.value);
+            speedValue.textContent = speed.toFixed(1);
+        });
+        
+        tensionSlider.addEventListener('input', (e) => {
+            tension = parseFloat(e.target.value);
+            tensionValue.textContent = tension.toFixed(1);
+            updateInfo();
+        });
+        
+        pauseBtn.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            pauseBtn.textContent = isPlaying ? 'Pause' : 'Play';
+        });
+        
+        resetBtn.addEventListener('click', () => {
+            time = 0;
+            drawWave();
+        });
+        
+        soundBtn.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            const indicator = soundBtn.querySelector('.audio-indicator');
+            
+            if (soundEnabled) {
+                soundBtn.innerHTML = 'Sound: ON <span class="audio-indicator"></span>';
+                if (gainNode) gainNode.gain.value = 0.1;
+            } else {
+                soundBtn.innerHTML = 'Sound: OFF <span class="audio-indicator off"></span>';
+                if (gainNode) gainNode.gain.value = 0;
+            }
+        });
+        
+        newQuizBtn.addEventListener('click', displayQuiz);
+        
+        modeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                mode = parseInt(btn.dataset.mode);
+                modeSlider.value = mode;
+                modeValue.textContent = mode;
+                updateInfo();
+            });
+        });
+        
+        // Initialize
+        updateInfo();
+        animate();
+        displayQuiz();
+        
+        // Initialize audio when user interacts
+        document.addEventListener('click', () => {
+            if (!audioContext) {
+                initAudio();
+            }
+        }, { once: true });
+    </script>
+</body>
 </html>
